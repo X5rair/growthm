@@ -10,6 +10,7 @@ import SwiftData
 
 @main
 struct Growth_MapApp: App {
+    // MARK: - SwiftData Container (for future local caching)
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -22,10 +23,28 @@ struct Growth_MapApp: App {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
+    
+    // MARK: - Supabase Service
+    @StateObject private var supabaseService: SupabaseService = {
+        do {
+            return try SupabaseService()
+        } catch {
+            fatalError("Failed to initialize SupabaseService: \(error)")
+        }
+    }()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Group {
+                if supabaseService.isAuthenticated {
+                    // Main app view (post-authentication)
+                    MainTabView()
+                        .environmentObject(supabaseService)
+                } else {
+                    // Authentication view
+                    AuthenticationView(supabaseService: supabaseService)
+                }
+            }
         }
         .modelContainer(sharedModelContainer)
     }
