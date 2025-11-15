@@ -11,9 +11,17 @@ import SwiftUI
 /// Placeholder for future goals/sprints/progress views
 struct MainTabView: View {
     @EnvironmentObject var supabaseService: SupabaseService
-    
+    @State private var selectedTab: Tab = .goals
+
+    private enum Tab {
+        case goals
+        case progress
+        case tasks
+        case profile
+    }
+
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             // Goals tab (placeholder)
             NavigationStack {
                 VStack(spacing: Layout.spacingL) {
@@ -46,7 +54,8 @@ struct MainTabView: View {
             .tabItem {
                 Label("Goals", systemImage: "target")
             }
-            
+            .tag(Tab.goals)
+
             // Progress tab (placeholder)
             NavigationStack {
                 VStack {
@@ -67,7 +76,22 @@ struct MainTabView: View {
             .tabItem {
                 Label("Progress", systemImage: "chart.line.uptrend.xyaxis")
             }
-            
+            .tag(Tab.progress)
+
+            // Tasks tab
+            NavigationStack {
+                TasksView(
+                    viewModel: TasksViewModel(supabaseService: supabaseService),
+                    onSprintFinished: {
+                        selectedTab = .goals
+                    }
+                )
+            }
+            .tabItem {
+                Label("Tasks", systemImage: "checklist")
+            }
+            .tag(Tab.tasks)
+
             // Profile tab (placeholder)
             NavigationStack {
                 VStack {
@@ -90,6 +114,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Profile", systemImage: "person.circle")
             }
+            .tag(Tab.profile)
         }
         .accentColor(AppColors.accent)
     }
