@@ -13,7 +13,6 @@
 		AB8826DF2EC88C7E00F49375 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = AB8826DE2EC88C7E00F49375 /* Supabase */; };
 		AB8826E12EC88D9C00F49375 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = AB8826E02EC88D9C00F49375 /* Realtime */; };
 		AB8826E32EC88D9C00F49375 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = AB8826E22EC88D9C00F49375 /* Storage */; };
-		ABFB00012F0A230300123456 /* SupabaseConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABFB00002F0A230300123456 /* SupabaseConfig.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -97,6 +96,7 @@
 				AB8826A32EC8712F00F49375 /* Growth MapUITests */,
 				AB8826DD2EC88C7E00F49375 /* Frameworks */,
 				AB8826882EC8712C00F49375 /* Products */,
+				AB8828C62EC89DE000F49375 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -115,6 +115,14 @@
 			children = (
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		AB8828C62EC89DE000F49375 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				ABFB00002F0A230300123456 /* SupabaseConfig.plist */,
+			);
+			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -246,7 +254,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ABFB00012F0A230300123456 /* SupabaseConfig.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
