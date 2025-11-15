@@ -13,6 +13,7 @@
 		AB8826DF2EC88C7E00F49375 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = AB8826DE2EC88C7E00F49375 /* Supabase */; };
 		AB8826E12EC88D9C00F49375 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = AB8826E02EC88D9C00F49375 /* Realtime */; };
 		AB8826E32EC88D9C00F49375 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = AB8826E22EC88D9C00F49375 /* Storage */; };
+		ABFB00012F0A230300123456 /* SupabaseConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = ABFB00002F0A230300123456 /* SupabaseConfig.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,6 +37,7 @@
 		AB8826872EC8712C00F49375 /* Growth Map.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Growth Map.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB8826962EC8712F00F49375 /* Growth MapTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Growth MapTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB8826A02EC8712F00F49375 /* Growth MapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Growth MapUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABFB00002F0A230300123456 /* SupabaseConfig.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = SupabaseConfig.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -244,6 +246,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ABFB00012F0A230300123456 /* SupabaseConfig.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
