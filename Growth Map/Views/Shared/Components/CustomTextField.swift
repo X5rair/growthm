@@ -91,9 +91,11 @@ struct CustomTextField: View {
                 HStack(spacing: Layout.spacingXS) {
                     Image(systemName: "exclamationmark.circle.fill")
                         .font(.caption)
+                        .foregroundColor(AppColors.error)
                     Text(errorMessage)
+                        .font(AppTypography.helperText)
+                        .foregroundColor(AppColors.error)
                 }
-                .errorText()
             }
         }
         .accessibilityElement(children: .combine)
