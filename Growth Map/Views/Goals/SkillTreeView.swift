@@ -136,7 +136,7 @@ struct SkillTreeView: View {
 }
 
 #Preview {
-    struct PreviewGrowthMapAPI: GrowthMapAPIProtocol {
+    class PreviewGrowthMapAPI: GrowthMapAPIProtocol {
         func getGoalDetail(goalId: String) async throws -> GoalDetailResponse {
             GoalDetailResponse(
                 goal: Goal(

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 
 /// View model that manages the list of sprint tasks for the Tasks tab
 @MainActor

@@ -42,17 +42,9 @@ struct Growth_MapApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if supabaseService.isAuthenticated {
-                    // Main app view (post-authentication)
-                    MainTabView()
-                        .environmentObject(supabaseService)
-                        .environmentObject(growthMapAPI)
-                } else {
-                    // Authentication view
-                    AuthenticationView(supabaseService: supabaseService)
-                }
-            }
+            ContentView()
+                .environmentObject(supabaseService)
+                .environmentObject(growthMapAPI)
         }
         .modelContainer(sharedModelContainer)
     }
