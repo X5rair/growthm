@@ -106,6 +106,58 @@ export interface SprintTaskRecord {
   updated_at: string;
 }
 
+export interface TaskStatusUpdate {
+  taskId: string;
+  status: TaskStatus;
+  notes?: string;
+}
+
+export interface RegenerateSprintBody {
+  sprintId: string;
+  statusUpdates?: TaskStatusUpdate[];
+  feedback?: string;
+  feelingTags?: string[];
+}
+
+export interface RegenerateSprintResult {
+  sprint: SprintRecord & { tasks: SprintTaskRecord[] };
+  progressLog: ProgressLogRecord;
+}
+
+export interface GrowthReportBody {
+  goalId: string;
+  since?: string;
+  until?: string;
+  includeSprints?: number;
+}
+
+export interface GrowthReportResult {
+  goal: GoalRecord;
+  sprintSummaries: SprintSummary[];
+  insights: {
+    narrative: string;
+    recommendations: string[];
+  };
+  progressLogs: ProgressLogRecord[];
+}
+
+export interface SprintSummary {
+  sprint: SprintRecord;
+  completed: number;
+  pending: number;
+  skipped: number;
+}
+
+export interface ProgressLogRecord {
+  id: string;
+  user_id: string;
+  goal_id: string;
+  sprint_id: string | null;
+  payload: Record<string, unknown>;
+  recorded_at: string;
+  created_at: string;
+}
+
 export interface CreateGrowthMapResult {
   goal: GoalRecord;
   skillTree: SkillTreeRecord & { nodes: SkillTreeNodeRecord[] };

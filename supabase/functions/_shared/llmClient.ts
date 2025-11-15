@@ -1,13 +1,18 @@
 import type {
+  Difficulty,
   GoalInput,
+  GoalRecord,
+  ProgressLogRecord,
   SkillTreeDraft,
   SkillTreeNodeDraft,
   SprintPlan,
+  SprintSummary,
   SprintTaskDraft,
 } from "./types.ts";
 
 const CHAT_URL = "https://api.openai.com/v1/chat/completions";
 const MODEL = "gpt-4.1";
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 async function callLLM(prompt: string): Promise<string> {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
@@ -96,16 +101,14 @@ function buildSprintTasks(
   return nodes.slice(0, 4).map((node, index) => {
     const due = new Date(baseDate);
     due.setDate(baseDate.getDate() + index * 2 + 3);
-    const difficulty = node.focusHours > 20
+    const difficulty: Difficulty = node.focusHours > 20
       ? "high"
       : node.focusHours > 10
       ? "medium"
       : "low";
     return {
       title: node.title,
-      description: `Work on ${node.title} by allocating ${
-        Math.ceil(node.focusHours)
-      } focused minutes this week.`,
+      description: `Work on ${node.title} by allocating ${Math.ceil(node.focusHours)} focused minutes this week.`,
       difficulty,
       dueDate: due.toISOString().split("T")[0],
       estimatedMinutes: Math.max(15, Math.round(node.focusHours)),
@@ -141,7 +144,7 @@ export async function generateSkillTreeDraft(
   if (Deno.env.get("OPENAI_API_KEY")) {
     try {
       const prompt =
-        `Create 3 skill-tree nodes for the goal titled \"${input.title}\". Output valid JSON like {"nodes": [{"nodePath":"...","title":"...","level":1,"focusHours":10,"payload":{}}]}.`;
+        `Create 3 skill-tree nodes for the goal titled "${input.title}". Output valid JSON like {"nodes": [{"nodePath":"...","title":"...","level":1,"focusHours":10,"payload":{}}]}.`;
       const raw = await callLLM(prompt);
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed.nodes) && parsed.nodes.length > 0) {
@@ -168,16 +171,186 @@ function formatDate(date: Date): string {
 export function planInitialSprint(
   input: GoalInput,
   nodes: SkillTreeNodeDraft[],
+  startDate = new Date(),
+  lengthDays = 6,
 ): SprintPlan {
-  const today = new Date();
-  const end = new Date(today);
-  end.setDate(today.getDate() + 6);
+  const from = new Date(startDate);
+  const to = new Date(from);
+  to.setDate(from.getDate() + lengthDays);
 
   return {
     sprintNumber: 1,
-    fromDate: formatDate(today),
-    toDate: formatDate(end),
+    fromDate: formatDate(from),
+    toDate: formatDate(to),
     summary: heuristicSprintSummary(input),
-    tasks: buildSprintTasks(nodes, today),
+    tasks: buildSprintTasks(nodes, from),
   };
+}
+
+export function goalRecordToGoalInput(goal: GoalRecord): GoalInput {
+  return {
+    title: goal.title,
+    description: goal.description,
+    horizonMonths: goal.horizon_months,
+    dailyMinutes: goal.daily_minutes,
+  };
+}
+
+function formatSprintPrompt(
+  goal: GoalInput,
+  nodes: SkillTreeNodeDraft[],
+  sprintNumber: number,
+  fromDate: Date,
+  toDate: Date,
+  context: {
+    completed: number;
+    pending: number;
+    skipped: number;
+    feedback?: string;
+    feelingTags?: string[];
+  },
+): string {
+  const nodeList = nodes.slice(0, 5).map((node) => `* ${node.nodePath}: ${node.title}`).join("\n");
+  const summary = context.feedback
+    ? `Based on feedback: ${context.feedback}`
+    : "";
+  const feelings = context.feelingTags?.length
+    ? `Feelings: ${context.feelingTags.join(", ")}`
+    : "";
+  return `Goal: ${goal.title}\nDescription: ${goal.description}\nSprint #: ${sprintNumber}, window ${formatDate(fromDate)} -> ${formatDate(toDate)}\nContext: completed ${context.completed}, pending ${context.pending}, skipped ${context.skipped}. ${summary} ${feelings}\nCandidate nodes:\n${nodeList}\nOutput JSON: {\"summary\": \"...\", \"tasks\": [{\"title\":\"...\",\"description\":\"...\",\"difficulty\":\"low|medium|high\",\"nodePath\":\"...\",\"estimatedMinutes\": 15,\"dueDate\": \"YYYY-MM-DD\"}]}\nUse at most 5 tasks.`;
+}
+
+function normalizeLLMTask(
+  task: Record<string, unknown>,
+  defaultDate: Date,
+  index: number,
+): SprintTaskDraft {
+  const baseDue = new Date(defaultDate);
+  baseDue.setDate(baseDue.getDate() + index * 2 + 3);
+  const dueDate = typeof task.dueDate === "string" && task.dueDate.length > 0
+    ? task.dueDate
+    : formatDate(baseDue);
+  const difficulty = typeof task.difficulty === "string" &&
+    ["low", "medium", "high"].includes(task.difficulty)
+    ? (task.difficulty as Difficulty)
+    : "medium";
+  return {
+    title: typeof task.title === "string" ? task.title : "Task",
+    description: typeof task.description === "string"
+      ? task.description
+      : "Allocate focused time to this node.",
+    difficulty,
+    dueDate,
+    estimatedMinutes: typeof task.estimatedMinutes === "number"
+      ? task.estimatedMinutes
+      : 30,
+    nodePath: typeof task.nodePath === "string" ? task.nodePath : undefined,
+  };
+}
+
+export async function planAdaptiveSprint(
+  goal: GoalInput,
+  nodes: SkillTreeNodeDraft[],
+  sprintNumber: number,
+  fromDate: Date,
+  toDate: Date,
+  context: {
+    completed: number;
+    pending: number;
+    skipped: number;
+    feedback?: string;
+    feelingTags?: string[];
+  },
+): Promise<SprintPlan> {
+  const lengthDays = Math.max(
+    1,
+    Math.round((toDate.getTime() - fromDate.getTime()) / MS_PER_DAY),
+  );
+  const fallback = planInitialSprint(goal, nodes, fromDate, lengthDays);
+  fallback.sprintNumber = sprintNumber;
+  fallback.fromDate = formatDate(fromDate);
+  fallback.toDate = formatDate(toDate);
+  fallback.summary = context.feedback ?? fallback.summary;
+
+  if (Deno.env.get("OPENAI_API_KEY")) {
+    try {
+      const prompt = formatSprintPrompt(
+        goal,
+        nodes,
+        sprintNumber,
+        fromDate,
+        toDate,
+        context,
+      );
+      const raw = await callLLM(prompt);
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed.tasks) && parsed.tasks.length > 0) {
+        return {
+          sprintNumber,
+          fromDate: formatDate(fromDate),
+          toDate: formatDate(toDate),
+          summary: typeof parsed.summary === "string"
+            ? parsed.summary
+            : fallback.summary,
+          tasks: parsed.tasks.map((task: Record<string, unknown>, index: number) =>
+            normalizeLLMTask(task, fromDate, index)
+          ),
+        };
+      }
+    } catch (error) {
+      console.warn("generate sprint plan fallback", error);
+    }
+  }
+
+  return fallback;
+}
+
+function buildGrowthReportPrompt(
+  goal: GoalInput,
+  summaries: SprintSummary[],
+  logs: ProgressLogRecord[],
+): string {
+  const sprintLines = summaries.map((summary) =>
+    `Sprint ${summary.sprint.sprint_number}: ${summary.completed} done, ${summary.pending} pending, ${summary.skipped} skipped, summary ${summary.sprint.summary ?? ""}`,
+  ).join("\n");
+  const logLines = logs
+    .slice(0, 5)
+    .map((log) => `Log ${log.recorded_at}: ${JSON.stringify(log.payload)}`)
+    .join("\n");
+  return `You are a growth analyst. Goal: ${goal.title}.\nSprints:\n${sprintLines}\nLogs:\n${logLines}\nOutput JSON {"narrative":"...","recommendations":["...","..."]}`;
+}
+
+export async function generateGrowthReport(
+  goal: GoalInput,
+  summaries: SprintSummary[],
+  logs: ProgressLogRecord[],
+): Promise<{ narrative: string; recommendations: string[] }> {
+  const totalCompleted = summaries.reduce((acc, summary) => acc + summary.completed, 0);
+  const fallback = {
+    narrative: `Across ${summaries.length} sprints you completed ${totalCompleted} tasks and have ${summaries.reduce((acc, summary) => acc + summary.pending, 0)} pending items. Continue tracking streaks and reflections.`,
+    recommendations: [
+      "Review the most skipped nodes and adjust your focus.",
+      "Keep annotating progress logs so adaptation stays grounded in data.",
+    ],
+  };
+
+  if (!Deno.env.get("OPENAI_API_KEY")) {
+    return fallback;
+  }
+
+  try {
+    const prompt = buildGrowthReportPrompt(goal, summaries, logs);
+    const raw = await callLLM(prompt);
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.narrative === "string" && Array.isArray(parsed.recommendations)) {
+      return {
+        narrative: parsed.narrative,
+        recommendations: parsed.recommendations.filter((item: unknown) => typeof item === "string") as string[],
+      };
+    }
+  } catch (error) {
+    console.warn("Growth report fallback", error);
+  }
+
+  return fallback;
 }
